@@ -47,41 +47,26 @@ static void leds_clear(ws2811_led_t *leds) {
 }
 
 static void leds_update(ws2811_led_t *leds) {
-    const int ndots = 8;
-    const ws2811_led_t dotcolours[8] = {
-        0x00000000,  // red
-        0x00201000,  // orange
-        0x00202000,  // yellow
-        0x00002000,  // green
-        0x00002020,  // lightblue
-        0x00000020,  // blue
-        0x00100010,  // purple
-        0x00200010,  // pink
+    const int ndots = 3;
+    const ws2811_led_t dotcolours[3] = {
+        0x00ffffff,
+        0x00ffffff,
+        0x00ffffff,
     };
 
     const double accel = 0.01;
 
-    static double dots_pos = 150 - 8;
+    static double dots_pos = 0.0;
     static double dots_vel = 0.0;
-    static bool bounced;
 
     // Physics:
-    dots_vel -= accel;          // Apply acceleration
+    dots_vel += accel;          // Apply acceleration
     dots_pos += dots_vel;       // Apply velocity
 
-    // Detect and apply bounce:
-    if(dots_pos < 0.0 && !bounced) {
-        bounced = true;
-        // In theory we could just invert the velocity, but numerical
-        // imprecision means we lose energy over time. So set a constant
-        // velocity here.
-        // Relevant equation of motion: v^2 = 2.a.s
-        dots_vel = sqrt(2 * accel * (LED_COUNT - ndots));
+    if(dots_pos > LED_COUNT) {
+        dots_pos = 0.0;
+        dots_vel = 0.0;
     }
-
-    // Reset bounce indicator
-    if(dots_pos > 0.0 && bounced)
-        bounced = false;
 
     // Render the dots:
     leds_clear(leds);

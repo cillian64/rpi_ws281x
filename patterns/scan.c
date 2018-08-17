@@ -31,7 +31,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
@@ -47,8 +46,7 @@ static void leds_clear(ws2811_led_t *leds) {
 }
 
 static void leds_update(ws2811_led_t *leds) {
-    const int ndots = 8;
-    const ws2811_led_t dotcolours[8] = {
+    const ws2811_led_t dotcolours[] = {
         0x00000000,  // red
         0x00201000,  // orange
         0x00202000,  // yellow
@@ -59,37 +57,20 @@ static void leds_update(ws2811_led_t *leds) {
         0x00200010,  // pink
     };
 
-    const double accel = 0.01;
+    static int dotspos = 0;
+    const int ndots = sizeof(dotcolours) / sizeof(ws2811_led_t);
+    static bool rising = true;
 
-    static double dots_pos = 150 - 8;
-    static double dots_vel = 0.0;
-    static bool bounced;
+    // Move the dots
+    if(dotspos + ndots >= LED_COUNT - 1)
+        rising = false;
+    if(dotspos < 1)
+        rising = true;
+    dotspos += rising ? 1 : -1;
 
-    // Physics:
-    dots_vel -= accel;          // Apply acceleration
-    dots_pos += dots_vel;       // Apply velocity
-
-    // Detect and apply bounce:
-    if(dots_pos < 0.0 && !bounced) {
-        bounced = true;
-        // In theory we could just invert the velocity, but numerical
-        // imprecision means we lose energy over time. So set a constant
-        // velocity here.
-        // Relevant equation of motion: v^2 = 2.a.s
-        dots_vel = sqrt(2 * accel * (LED_COUNT - ndots));
-    }
-
-    // Reset bounce indicator
-    if(dots_pos > 0.0 && bounced)
-        bounced = false;
-
-    // Render the dots:
     leds_clear(leds);
-    for (int i = 0; i < ndots; i++) {
-        int dot_pos = (int)(dots_pos + i);
-        if(dot_pos > 0 && dot_pos < LED_COUNT)
-            leds[dot_pos] = dotcolours[i];
-    }
+    for (int i = 0; i < ndots; i++)
+        leds[dotspos + i] = dotcolours[i];
 }
 
 static uint8_t running = 1;
@@ -146,7 +127,7 @@ int main() {
             break;
         }
 
-        usleep(1000000 / 120); // 120 frames /sec
+        usleep(1000000 / 60); // 60 frames /sec
     }
 
     // Clear before exiting
