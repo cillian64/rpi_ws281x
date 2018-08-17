@@ -59,10 +59,14 @@ static void leds_update(ws2811_led_t *leds) {
 
     static int dotspos = 0;
     const int ndots = sizeof(dotcolours) / sizeof(ws2811_led_t);
+    static bool rising = true;
 
-    dotspos++;
-    if(dotspos + ndots > LED_COUNT)
-        dotspos = 0;
+    // Move the dots
+    if(dotspos + ndots >= LED_COUNT - 1)
+        rising = false;
+    if(dotspos < 1)
+        rising = true;
+    dotspos += rising ? 1 : -1;
 
     leds_clear(leds);
     for (int i = 0; i < ndots; i++)
